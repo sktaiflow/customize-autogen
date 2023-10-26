@@ -51,6 +51,24 @@ The easiest way to start playing is
 
 AutoGen requires **Python version >= 3.8**. It can be installed from pip:
 
+Option1 : install API with pip install
+
+```bash
+pip install git+https://github.com/sktaiflow/customize-autogen.git
+```
+
+Option2 : install API with local resource
+
+```bash
+git clone https://github.com/sktaiflow/customize-autogen.git
+cd customize-autogen
+
+## install
+python setup.py develop
+```
+
+Option3 : install original API with pip install
+
 ```bash
 pip install pyautogen
 ```
