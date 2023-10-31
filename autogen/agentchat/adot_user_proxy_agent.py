@@ -1,6 +1,14 @@
 from .adot_conversable_agent import AdotConversableAgent
 from typing import Callable, Dict, Optional, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union
+from .agent import Agent
+import json
+try:
+    from termcolor import colored
+except ImportError:
 
+    def colored(x, *args, **kwargs):
+        return x
 
 class AdotUserProxyAgent(AdotConversableAgent):
     """(In preview) A proxy agent for the user, that can execute code and provide feedback to the other agents.
@@ -82,3 +90,68 @@ class AdotUserProxyAgent(AdotConversableAgent):
             default_auto_reply,
             database=database,
         )
+
+    def generate_function_call_reply(
+        self,
+        session_id:str,
+        messages: Optional[List[Dict]] = None,
+        sender: Optional[Agent] = None,
+        config: Optional[Any] = None,
+        **kwargs,
+    ):
+        """Generate a reply using function call."""
+        if config is None:
+            config = self
+        if messages is None:
+            messages = self._oai_messages.query(session_id, agent=sender)
+        message = messages[-1]
+        if "function_call" in message:
+            _, func_return = self.execute_function(message["function_call"], session_id=session_id)
+            return True, func_return
+        return False, None
+    
+    def execute_function(self, func_call, session_id=None):
+        """Execute a function call and return the result.
+
+        Override this function to modify the way to execute a function call.
+
+        Args:
+            func_call: a dictionary extracted from openai message at key "function_call" with keys "name" and "arguments".
+
+        Returns:
+            A tuple of (is_exec_success, result_dict).
+            is_exec_success (boolean): whether the execution is successful.
+            result_dict: a dictionary with keys "name", "role", and "content". Value of "role" is "function".
+        """
+        func_name = func_call.get("name", "")
+        func = self._function_map.get(func_name, None)
+
+        is_exec_success = False
+        if func is not None:
+            # Extract arguments from a json-like string and put it into a dict.
+            input_string = self._format_json_str(func_call.get("arguments", "{}"))
+            try:
+                arguments = json.loads(input_string)
+            except json.JSONDecodeError as e:
+                arguments = None
+                content = f"Error: {e}\n You argument should follow json format."
+
+            # Try to execute the function
+            if arguments is not None:
+                print(
+                    colored(f"\n>>>>>>>> EXECUTING FUNCTION {func_name}...", "magenta"),
+                    flush=True,
+                )
+                try:
+                    content = func(session_id=session_id, **arguments)
+                    is_exec_success = True
+                except Exception as e:
+                    content = f"Error: {e}"
+        else:
+            content = f"Error: Function {func_name} not found."
+
+        return is_exec_success, {
+            "name": func_name,
+            "role": "function",
+            "content": str(content),
+        }
