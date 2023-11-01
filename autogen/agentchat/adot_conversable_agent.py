@@ -859,7 +859,7 @@ class AdotConversableAgent(Agent):
             raise AssertionError(error_msg)
 
         if messages is None:
-            messages = self._oai_messages.query(session_id=session_id, agent=sender)
+            messages = await self._oai_messages.a_query(session_id=session_id, agent=sender)
 
         for reply_func_tuple in self._reply_func_list:
             reply_func = reply_func_tuple["reply_func"]

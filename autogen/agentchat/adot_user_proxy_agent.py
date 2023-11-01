@@ -91,6 +91,13 @@ class AdotUserProxyAgent(AdotConversableAgent):
             database=database,
         )
 
+        ## override
+        self._reply_func_list = []
+        self.register_reply([Agent, None], AdotUserProxyAgent.generate_oai_reply)
+        self.register_reply([Agent, None], AdotUserProxyAgent.generate_code_execution_reply)
+        self.register_reply([Agent, None], AdotUserProxyAgent.generate_function_call_reply)
+        self.register_reply([Agent, None], AdotUserProxyAgent.check_termination_and_human_reply)
+
     def generate_function_call_reply(
         self,
         session_id:str,
