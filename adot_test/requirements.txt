@@ -1,0 +1,5 @@
+termcolor
+flaml
+python-doten
+diskcache
+openai
