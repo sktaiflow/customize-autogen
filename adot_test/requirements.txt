@@ -1,5 +1,6 @@
 termcolor
 flaml
-python-doten
+python-dotenv
 diskcache
 openai
+diskcache
