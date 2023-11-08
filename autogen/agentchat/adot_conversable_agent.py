@@ -407,7 +407,7 @@ class AdotConversableAgent(Agent):
             content = message.get("content")
             if content is not None:
                 if "context" in message:
-                    content = oai.ChatCompletion.instantiate(
+                    content = oai.AdotChatCompletion.instantiate(
                         content,
                         message["context"],
                         self.llm_config and self.llm_config.get("allow_format_str_template", False),
@@ -628,10 +628,10 @@ class AdotConversableAgent(Agent):
             messages = self._oai_messages.query(session_id=session_id, agent=sender)
 
         # TODO: #1143 handle token limit exceeded error
-        response = oai.ChatCompletion.create(
+        response = oai.AdotChatCompletion.adot_create(
             context=messages[-1].pop("context", None), messages=self._oai_system_message + messages, **llm_config
         )
-        return True, oai.ChatCompletion.extract_text_or_function_call(response)[0]
+        return True, oai.AdotChatCompletion.extract_text_or_function_call(response)[0]
 
     def generate_code_execution_reply(
         self,

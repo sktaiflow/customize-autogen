@@ -7,6 +7,7 @@ from autogen.oai.openai_utils import (
     config_list_from_json,
     config_list_from_dotenv,
 )
+from autogen.oai.adot_completion import AdotChatCompletion
 
 __all__ = [
     "Completion",
@@ -17,4 +18,5 @@ __all__ = [
     "config_list_from_models",
     "config_list_from_json",
     "config_list_from_dotenv",
+    "AdotChatCompletion",
 ]
