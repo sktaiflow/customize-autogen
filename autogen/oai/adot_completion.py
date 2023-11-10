@@ -37,71 +37,81 @@ class AdotChatCompletion(ChatCompletion):
                 prompt_url = each_config.get('prompt_url', False)
                 
                 if prompt_id and prompt_url:
-                    try:
-                        messages = each_config.get('messages', [])
-
-                        history = messages[:-1]
-                        message = messages[-1]
-
-                        data = {
-                            "promptId": prompt_id,
-                            "requestTexts": [
-                                {
-                                    "key": each_config.get('key', 'content'),
-                                    "value": message.get('content', ''),
-                                },
-                            ],
-                            'role': message.get('role', 'user'),
-                            'history' : history,
-                        }
-
-                        functions = each_config.get('functions', [])
-                        if len(functions) > 0:
-                            data["functionCall"] = {
-                                "control": "auto",
-                                "functions" : functions,
-                            }
-
-                        headers = {
-                            "Accept": "application/json",
-                        }
-                        resp = requests.post(
-                            prompt_url,
-                            headers=headers,
-                            json=data,
-                        )
-                        resp = resp.json().get('res', {})
-
-                        ## convert return format
-                        choices = []
-                        content = resp.get('content', None)
-                        function_call = resp.get('functionCall', None)
                         
-                        if content is not None:
-                            choices.append({
-                                "message" : {
-                                    'role':'assistant',
-                                    'content':content
-                                },
-                            })
+                    messages = config.get('messages', [])
+                    
+                    history = messages[:-1]
+                    message = messages[-1]
 
-                        elif function_call is not None:
-                            choices.append({
-                                "message" : {
-                                    'role': 'assistant',
-                                    'function_call': function_call,
-                                },
-                            })
+                    data = {
+                        "promptId": prompt_id,
+                        "requestTexts": [
+                            {
+                                "key": each_config.get('key', 'content'),
+                                "value": message.get('content', ''),
+                            },
+                        ],
+                        'role': message.get('role', 'user'),
+                    }
+                    if 'name' in message:
+                        data['name'] = message.get('name', None)
 
-                        return_dict = {
-                            "id": resp.get("transactionId", ""),
-                            "model": resp.get('model', ""),
-                            "choices": choices,
-                            "usage" : resp.get("usage", {}),
+                    if len(history) >0:
+                        data['history'] = [{("functionCall" if 'function_call' in k else k): v for k, v in his.items()} for his in history]
+                        
+
+                    functions = config.get('functions', [])
+                    if len(functions) > 0:
+                        data["functionCall"] = {
+                            "control": "auto",
+                            "functions" : functions,
                         }
-                        return return_dict
-                    except Exception as e:
-                        print(f"[SKT AZURE ERROR] {e}")
+
+                    ## Test Proxy 때문
+                    if 'a2a.sktai.io' in prompt_url:
+                        data = {
+                            'body_dict' : data
+                        }
+
+                    headers = {
+                        "Accept": "application/json",
+                    }
+                    resp = requests.post(
+                        prompt_url,
+                        headers=headers,
+                        json=data,
+                    )
+                    resp = resp.json().get('res', {})
+                    
+                    ## convert return format
+                    choices = []
+                    content = resp.get('content', None)
+                    function_call = resp.get('functionCall', None)
+                    
+                    if content is not None:
+                        choices.append({
+                            "message" : {
+                                'role':'assistant',
+                                'content':content
+                            },
+                        })
+
+                    elif function_call is not None:
+                        choices.append({
+                            "message" : {
+                                'role': 'assistant',
+                                'function_call': function_call,
+                            },
+                        })
+
+                    return_dict = {
+                        "id": resp.get("transactionId", ""),
+                        "model": resp.get('model', ""),
+                        "choices": choices,
+                        "usage" : resp.get("usage", {}),
+                    }
+                    return return_dict
+                    
 
         ## 없으면 class create로 return            
         return cls.create(config_list=config_list, **config)
